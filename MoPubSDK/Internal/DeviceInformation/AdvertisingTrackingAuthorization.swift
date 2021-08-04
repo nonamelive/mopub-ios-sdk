@@ -17,7 +17,8 @@ public final class AdvertisingTrackingAuthorization: NSObject {
     @objc public static dynamic var advertisingIdentifier: String? {
         // Note that per: https://developer.apple.com/documentation/adsupport/asidentifiermanager/1614151-advertisingidentifier
         // The advertising identifier has a value of 00000000-0000-0000-0000-000000000000 until authorization is granted or when using the Simulator.
-        let identifier = ASIdentifierManager.shared().advertisingIdentifier.uuidString
+        guard let advertisingIdentifier = ASIdentifierManager.shared().safeAdvertisingIdentifier else { return nil }
+        let identifier = advertisingIdentifier.uuidString
         guard identifier != zeroUUID else { return nil }
         
         // Uppercase the UUID to preserve uniformity of UUIDs with previous iterations of the SDK.
@@ -104,4 +105,11 @@ fileprivate extension AdvertisingTrackingAuthorization {
     
     /// All zero UUID string used for IDFA comparisons.
     static let zeroUUID: String = "00000000-0000-0000-0000-000000000000"
+}
+
+extension ASIdentifierManager {
+    /// https://bugs.swift.org/browse/SR-6143
+    public var safeAdvertisingIdentifier: UUID? {
+        return self.perform(#selector(getter: ASIdentifierManager.advertisingIdentifier))?.takeUnretainedValue() as? UUID
+    }
 }
